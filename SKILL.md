@@ -1,7 +1,6 @@
 ---
-slug: docx
+name: docx
 description: "Crea un documento Word (.docx) editabile, o variante ODT / Google Doc, partendo da contenuto strutturato. Delegata da `source-to-artifact` o `deck` quando il formato richiesto è documento."
-is_core: true
 ---
 # DOCX — Word document creation
 
