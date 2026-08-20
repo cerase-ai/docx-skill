@@ -1,6 +1,6 @@
 ---
 name: docx
-description: "Crea un documento Word (.docx) editabile, o variante ODT / Google Doc, partendo da contenuto strutturato. Delegata da `source-to-artifact` o `deck` quando il formato richiesto è documento."
+description: "Creates an editable Word document (.docx), or an ODT / Google Doc variant, from structured content. Delegated to by `source-to-artifact` or `deck` when the requested format is a document."
 ---
 # DOCX — Word document creation
 
