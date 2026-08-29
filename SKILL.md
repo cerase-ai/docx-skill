@@ -61,7 +61,7 @@ call_recipe("google-workspace.docs_create", {
 
 Returns `{doc_id, doc_url}`. Surface the URL to the user.
 
-If google-workspace is not installed/credenzialed, tell the user politely: "per esportare in Google Doc serve il connector Google Workspace — l'admin lo deve abilitare". Fall back to `.docx`.
+If google-workspace is not installed/credenzialed, tell the user politely, in their language, that exporting to Google Doc needs the Google Workspace connector and that an admin has to enable it. Fall back to `.docx`.
 
 ## Style rules
 
@@ -75,4 +75,4 @@ If google-workspace is not installed/credenzialed, tell the user politely: "per 
 
 - Don't bash subprocess to call libreoffice yourself. Use `cerase-office-converter` recipes — they handle the headless flag, profile dir, output encoding correctly.
 - Don't return raw bytes in the chat — always write to workspace + attach as file.
-- Don't silently drop content: if the source is too large for a single document, propose splitting ("vuoi che lo divido in 3 documenti per capitoli?").
+- Don't silently drop content: if the source is too large for a single document, propose splitting, in their language ("shall I split it into 3 documents, one per chapter?").
