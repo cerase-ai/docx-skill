@@ -1,78 +1,70 @@
 ---
 name: docx
-description: "Creates an editable Word document (.docx), or an ODT / Google Doc variant, from structured content. Delegated to by `source-to-artifact` or `deck` when the requested format is a document."
+description: "Creates an editable Word document (.docx), or an OpenDocument (.odt) or Google Doc version of it, from content the conversation provides. Delegated to by `source-to-artifact` or `deck` when the format asked for is a document."
 ---
-# DOCX — Word document creation
+# DOCX — Word documents
 
-Create a `.docx` Word document (or .odt / Google Doc variant) from structured content. This skill is invoked by `source-to-artifact` or `deck` (Path C) when the user wants a document, not slides.
+You write the document as markdown in your workspace, and the office converter turns it into Word. Your container runs no Python and no LibreOffice, so you never build the file yourself: the converter does.
 
 ## Inputs
 
-You get from the caller skill:
-- **source content**: workspace path of a markdown file or pasted prose
-- **target format**: one of `docx` (Word native), `odt` (LibreOffice), `gdoc` (Google Doc)
-- **filename**: e.g. `report-q3.docx`
+From the caller skill, or from the person:
+- **content**: a markdown file in the workspace, or text from the conversation
+- **format**: `docx` (Word), `odt` (LibreOffice) or `gdoc` (Google Doc)
+- **file name**: such as `report-q3.docx`
 
-## Backend per format
+## Step 1 — write the markdown
 
-### `docx` (native, fast)
+Write `<name>.md` in the workspace with your write tool. The converter reads this shape:
 
-Use python-docx in the workspace. Pattern (in your code interpretation):
+- A YAML block on the first lines becomes the title block:
+  ```
+  ---
+  title: Quarterly report for Northwind Traders
+  subtitle: Third quarter 2026
+  author: Ada Rossi
+  date: 2026-10-05
+  ---
+  ```
+- `#` for a section, `##` for a sub-section, `###` at most.
+- `- ` for bullets, `1. ` for numbered lists.
+- Pipe tables with a header row; a numeric column right-aligned with `|---:|` under its header.
+- `**bold**` and `*italic*`.
+- No images: the converter receives this one file, so an image path inside it is not found.
 
-```python
-from docx import Document
-doc = Document()
-doc.add_heading('<title>', level=1)
-doc.add_paragraph('<intro>')
-doc.add_heading('<section>', level=2)
-doc.add_paragraph('<body>')
-# Bullet list:
-for item in items:
-    doc.add_paragraph(item, style='List Bullet')
-# Table:
-table = doc.add_table(rows=1, cols=len(headers))
-table.style = 'Light List Accent 1'
-for row in rows: ...
-doc.save('<filename>.docx')
-```
-
-Write the file to the workspace. Attach to reply.
-
-### `odt` (cross-format conversion via cerase-office-converter)
-
-First create the `.docx` natively (see above), then convert:
+## Step 2 — convert
 
 ```
-call_recipe("cerase-office-converter.convert_docx_to_odt", {input_b64: <base64 of .docx>})
+call_recipe("cerase-office-converter.convert_md_to_docx", {"path": "<name>.md", "output_filename": "<name>.docx"})
 ```
 
-Returns `{filename, size_bytes, contents_base64}`. Decode + write `.odt` to workspace.
+It answers `{path, filename, size_bytes}`: the document is in your workspace at `path`, which is `outputs/<name>.docx`.
 
-### `gdoc` (Google Doc via google-workspace MCP)
+When the person gives you a Word template (a .docx in the workspace), add `"reference_doc_path": "<template>.docx"`: the document then takes the template's fonts, colours and heading styles.
 
-Requires google-workspace MCP installed + tenant credentials (CONNECT-1 connector). Pattern:
+## Other formats
 
-```
-call_recipe("google-workspace.docs_create", {
-  title: "<filename without ext>",
-  markdown_content: <full markdown source>,
-})
-```
+- **odt**: convert the .docx you just made:
+  `call_recipe("cerase-office-converter.convert_docx_to_odt", {"path": "outputs/<name>.docx", "output_filename": "<name>.odt"})`
+- **gdoc** (Google Doc): make the .docx, then upload it to the person's Drive converted to a Google Doc:
+  `call_recipe("google-workspace.uploadFile", {"localPath": "outputs/<name>.docx", "name": "<title>", "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "convertToGoogleFormat": true})`
+  The answer carries the new file's `Link:`; give the person that link. If the Google Workspace connector is not among your connectors, say in their language that a Google Doc needs that connector, which the organisation's admin assigns, and send the .docx instead.
+- **PDF**: that is the `pdf-writer` skill.
 
-Returns `{doc_id, doc_url}`. Surface the URL to the user.
+These calls are the complete set. Do not invent others.
 
-If google-workspace is not installed or not connected, tell the user politely, in their language, that exporting to Google Doc needs the Google Workspace connector and that an admin has to enable it. Fall back to `.docx`.
+## Deliver
+
+Attach the file: `[[attach: outputs/<name>.docx]]`. Never paste its content or any base64 in the chat.
 
 ## Style rules
 
-- Headings hierarchy: H1 = title, H2 = section, H3 = sub-section. Avoid going deeper.
-- Bullet lists: ≤ 7 items per group (cognitive limit). Split into sub-headings if longer.
-- Tables: header row styled differently; first column left-aligned, numeric columns right-aligned.
-- No remote images (browsers/Word/LibreOffice handle them inconsistently).
-- Language: same as the source content / user's chat language.
+- Headings hierarchy: H1 = section, H2 = sub-section, H3 at most. The title is in the YAML block.
+- Bullet lists: at most 7 items per group. Split into sub-headings when longer.
+- Tables: a header row always; numeric columns right-aligned.
+- Language: the same as the source content or the person's chat.
 
 ## Don't
 
-- Don't bash subprocess to call libreoffice yourself. Use `cerase-office-converter` recipes — they handle the headless flag, profile dir, output encoding correctly.
-- Don't return raw bytes in the chat — always write to workspace + attach as file.
-- Don't silently drop content: if the source is too large for a single document, propose splitting, in their language ("shall I split it into 3 documents, one per chapter?").
+- Don't write Python, or call `libreoffice`, `soffice` or `pandoc` from bash: none of them is in your container.
+- Don't silently drop content: if the source is too large for one document, ask in their language whether to split it, for example one document per chapter.

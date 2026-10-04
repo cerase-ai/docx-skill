@@ -4,6 +4,6 @@
   "name": "docx",
   "type": "skill",
   "display_name": "Docx",
-  "description": "Creates an editable Word document (.docx), or an ODT / Google Doc variant, from structured content. Delegated to by `source-to-artifact` or `deck` when the requested format is a document.",
+  "description": "Creates an editable Word document (.docx), or an OpenDocument (.odt) or Google Doc version of it, from content the conversation provides. Delegated to by `source-to-artifact` or `deck` when the format asked for is a document.",
   "license": "MIT"
 }
