@@ -44,12 +44,15 @@ When the person gives you a Word template (a .docx in the workspace), add `"refe
 
 ## Other formats
 
-- **odt**: convert the .docx you just made:
-  `call_recipe("cerase-office-converter.convert_docx_to_odt", {"path": "outputs/<name>.docx", "output_filename": "<name>.odt"})`
-- **gdoc** (Google Doc): make the .docx, then upload it to the person's Drive converted to a Google Doc:
-  `call_recipe("google-workspace.uploadFile", {"localPath": "outputs/<name>.docx", "name": "<title>", "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "convertToGoogleFormat": true})`
-  The answer carries the new file's `Link:`; give the person that link. If the Google Workspace connector is not among your connectors, say in their language that a Google Doc needs that connector, which the organisation's admin assigns, and send the .docx instead.
+- **odt**: convert the .docx you just made: `call_recipe("cerase-office-converter.convert_docx_to_odt", {"path": "outputs/<name>.docx", "output_filename": "<name>.odt"})`
+- **gdoc** (Google Doc): make the .docx, then upload it to the person's Drive converted to a Google Doc, with the upload call below, and only when the person asked for a Google file: the upload puts the content in their Drive. The answer carries the new file's `Link:`; give the person that link. If the Google Workspace connector is not among your connectors, say in their language that a Google Doc needs that connector, which the organisation's admin assigns, and send the .docx instead.
 - **PDF**: that is the `pdf-writer` skill.
+
+The upload that makes the Google Doc:
+
+```
+call_recipe("google-workspace.uploadFile", {"localPath": "outputs/<name>.docx", "name": "<title>", "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "convertToGoogleFormat": true})
+```
 
 These calls are the complete set. Do not invent others.
 
